@@ -1,0 +1,168 @@
+<?php
+// Incluir el modelo
+require_once(BASE_PATH . '/models/Usuario.php');
+
+class UsuarioController {
+    private $db;
+    private $usuario;
+    
+    public function __construct() {
+        // Crear conexión a la base de datos
+        $database = new Database();
+        $this->db = $database->getConnection();
+        
+        // Instanciar el modelo Usuario
+        $this->usuario = new Usuario($this->db);
+    }
+    
+    // Mostrar formulario de registro
+    public function mostrarFormularioRegistro() {
+        include_once(BASE_PATH . '/views/templates/header.php');
+        include_once(BASE_PATH . '/views/usuario/registro.php');
+        include_once(BASE_PATH . '/views/templates/footer.php');
+    }
+    
+    // Mostrar formulario de login
+    public function mostrarFormularioLogin() {
+        include_once(BASE_PATH . '/views/templates/header.php');
+        include_once(BASE_PATH . '/views/usuario/login.php');
+        include_once(BASE_PATH . '/views/templates/footer.php');
+    }
+    
+    // Registrar un nuevo usuario
+    public function registrar() {
+        if($_SERVER['REQUEST_METHOD'] == 'POST') {
+            // Asignar valores a las propiedades del usuario
+            $this->usuario->nombre = $_POST['nombre'];
+            $this->usuario->email = $_POST['email'];
+            $this->usuario->password = $_POST['password'];
+            
+            // Crear el usuario
+            if($this->usuario->crear()) {
+                // Configurar mensaje de éxito
+                $mensaje = "Usuario creado correctamente";
+                include_once(BASE_PATH . '/views/templates/header.php');
+                include_once(BASE_PATH . '/views/usuario/login.php');
+                include_once(BASE_PATH . '/views/templates/footer.php');
+            } else {
+                // Configurar mensaje de error
+                $error = "No se pudo crear el usuario";
+                include_once(BASE_PATH . '/views/templates/header.php');
+                include_once(BASE_PATH . '/views/usuario/registro.php');
+                include_once(BASE_PATH . '/views/templates/footer.php');
+            }
+        }
+    }
+    
+    // Login de usuario
+    public function login() {
+        if($_SERVER['REQUEST_METHOD'] == 'POST') {
+            // Asignar valores a las propiedades del usuario
+            $this->usuario->email = $_POST['email'];
+            $this->usuario->password = $_POST['password'];
+            
+            // Verificar login
+            if($this->usuario->login()) {
+                // Iniciar sesión
+                session_start();
+                $_SESSION['id_usuario'] = $this->usuario->id;
+                $_SESSION['nombre_usuario'] = $this->usuario->nombre;
+                
+                // Redirigir a la lista de usuarios
+                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            } else {
+                // Configurar mensaje de error
+                $error = "Email o contraseña incorrectos";
+                include_once(BASE_PATH . '/views/templates/header.php');
+                include_once(BASE_PATH . '/views/usuario/login.php');
+                include_once(BASE_PATH . '/views/templates/footer.php');
+            }
+        }
+    }
+    
+    // Listar usuarios
+    public function listar() {
+        // Obtener todos los usuarios
+        $result = $this->usuario->leer();
+        
+        // Verificar si hay usuarios
+        if($result->rowCount() > 0) {
+            $usuarios = $result->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            $usuarios = array();
+        }
+        
+        include_once(BASE_PATH . '/views/templates/header.php');
+        include_once(BASE_PATH . '/views/usuario/lista.php');
+        include_once(BASE_PATH . '/views/templates/footer.php');
+    }
+    
+    // Mostrar formulario de edición
+    public function mostrarFormularioEditar() {
+        if(isset($_GET['id'])) {
+            $this->usuario->id = $_GET['id'];
+            
+            // Obtener los datos del usuario
+            if($this->usuario->leerUno()) {
+                include_once(BASE_PATH . '/views/templates/header.php');
+                include_once(BASE_PATH . '/views/usuario/editar.php');
+                include_once(BASE_PATH . '/views/templates/footer.php');
+            } else {
+                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            }
+        } else {
+            header('Location: ' . URL_BASE . 'index.php?action=listar');
+        }
+    }
+    
+    // Actualizar usuario
+    public function actualizar() {
+        if($_SERVER['REQUEST_METHOD'] == 'POST') {
+            // Asignar valores a las propiedades del usuario
+            $this->usuario->id = $_POST['id'];
+            $this->usuario->nombre = $_POST['nombre'];
+            $this->usuario->email = $_POST['email'];
+            
+            // Actualizar el usuario
+            if($this->usuario->actualizar()) {
+                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            } else {
+                // Volver al formulario de edición con mensaje de error
+                $error = "No se pudo actualizar el usuario";
+                include_once(BASE_PATH . '/views/templates/header.php');
+                include_once(BASE_PATH . '/views/usuario/editar.php');
+                include_once(BASE_PATH . '/views/templates/footer.php');
+            }
+        }
+    }
+    
+    // Eliminar usuario
+    public function eliminar() {
+        if(isset($_GET['id'])) {
+            $this->usuario->id = $_GET['id'];
+            
+            // Eliminar el usuario
+            if($this->usuario->eliminar()) {
+                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            } else {
+                // Redirigir a la lista con mensaje de error
+                $error = "No se pudo eliminar el usuario";
+                $result = $this->usuario->leer();
+                $usuarios = $result->fetchAll(PDO::FETCH_ASSOC);
+                
+                include_once(BASE_PATH . '/views/templates/header.php');
+                include_once(BASE_PATH . '/views/usuario/lista.php');
+                include_once(BASE_PATH . '/views/templates/footer.php');
+            }
+        } else {
+            header('Location: ' . URL_BASE . 'index.php?action=listar');
+        }
+    }
+    
+    // Cerrar sesión
+    public function logout() {
+        session_start();
+        session_destroy();
+        header('Location: ' . URL_BASE . 'index.php?action=login');
+    }
+}
