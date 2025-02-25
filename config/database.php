@@ -2,7 +2,7 @@
 class Database {
     private $host = "localhost";
     private $db_name = "proyecto_db";
-    private $username = "maximodos";
+    private $username = "maximo";
     private $password = "123456";
     private $conn = null;
 
