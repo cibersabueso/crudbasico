@@ -2,8 +2,8 @@
 class Database {
     private $host = "localhost";
     private $db_name = "proyecto_db";
-    private $username = "root";
-    private $password = "tu_contraseña_de_tu_basededatos";
+    private $username = "maximodos";
+    private $password = "123456";
     private $conn = null;
 
     public function getConnection() {

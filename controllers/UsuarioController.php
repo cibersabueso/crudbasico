@@ -38,18 +38,32 @@ class UsuarioController {
             $this->usuario->password = $_POST['password'];
             
             // Crear el usuario
-            if($this->usuario->crear()) {
-                // Configurar mensaje de éxito
-                $mensaje = "Usuario creado correctamente";
-                include_once(BASE_PATH . '/views/templates/header.php');
-                include_once(BASE_PATH . '/views/usuario/login.php');
-                include_once(BASE_PATH . '/views/templates/footer.php');
+            $resultado = $this->usuario->crear();
+            
+            // Verificar si es una petición API
+            if(isset($_GET['format']) && $_GET['format'] == 'json') {
+                header('Content-Type: application/json');
+                if($resultado) {
+                    echo json_encode(['success' => true, 'message' => 'Usuario creado correctamente']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'No se pudo crear el usuario']);
+                }
+                exit;
             } else {
-                // Configurar mensaje de error
-                $error = "No se pudo crear el usuario";
-                include_once(BASE_PATH . '/views/templates/header.php');
-                include_once(BASE_PATH . '/views/usuario/registro.php');
-                include_once(BASE_PATH . '/views/templates/footer.php');
+                // Comportamiento normal
+                if($resultado) {
+                    // Configurar mensaje de éxito
+                    $mensaje = "Usuario creado correctamente";
+                    include_once(BASE_PATH . '/views/templates/header.php');
+                    include_once(BASE_PATH . '/views/usuario/login.php');
+                    include_once(BASE_PATH . '/views/templates/footer.php');
+                } else {
+                    // Configurar mensaje de error
+                    $error = "No se pudo crear el usuario";
+                    include_once(BASE_PATH . '/views/templates/header.php');
+                    include_once(BASE_PATH . '/views/usuario/registro.php');
+                    include_once(BASE_PATH . '/views/templates/footer.php');
+                }
             }
         }
     }
@@ -62,20 +76,41 @@ class UsuarioController {
             $this->usuario->password = $_POST['password'];
             
             // Verificar login
-            if($this->usuario->login()) {
-                // Iniciar sesión
-                session_start();
-                $_SESSION['id_usuario'] = $this->usuario->id;
-                $_SESSION['nombre_usuario'] = $this->usuario->nombre;
-                
-                // Redirigir a la lista de usuarios
-                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            $resultado = $this->usuario->login();
+            
+            // Verificar si es una petición API
+            if(isset($_GET['format']) && $_GET['format'] == 'json') {
+                header('Content-Type: application/json');
+                if($resultado) {
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Login exitoso',
+                        'user' => [
+                            'id' => $this->usuario->id,
+                            'nombre' => $this->usuario->nombre
+                        ]
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Email o contraseña incorrectos']);
+                }
+                exit;
             } else {
-                // Configurar mensaje de error
-                $error = "Email o contraseña incorrectos";
-                include_once(BASE_PATH . '/views/templates/header.php');
-                include_once(BASE_PATH . '/views/usuario/login.php');
-                include_once(BASE_PATH . '/views/templates/footer.php');
+                // Comportamiento normal
+                if($resultado) {
+                    // Iniciar sesión
+                    session_start();
+                    $_SESSION['id_usuario'] = $this->usuario->id;
+                    $_SESSION['nombre_usuario'] = $this->usuario->nombre;
+                    
+                    // Redirigir a la lista de usuarios
+                    header('Location: ' . URL_BASE . 'index.php?action=listar');
+                } else {
+                    // Configurar mensaje de error
+                    $error = "Email o contraseña incorrectos";
+                    include_once(BASE_PATH . '/views/templates/header.php');
+                    include_once(BASE_PATH . '/views/usuario/login.php');
+                    include_once(BASE_PATH . '/views/templates/footer.php');
+                }
             }
         }
     }
@@ -92,9 +127,17 @@ class UsuarioController {
             $usuarios = array();
         }
         
-        include_once(BASE_PATH . '/views/templates/header.php');
-        include_once(BASE_PATH . '/views/usuario/lista.php');
-        include_once(BASE_PATH . '/views/templates/footer.php');
+        // Verificar si es una petición API
+        if(isset($_GET['format']) && $_GET['format'] == 'json') {
+            header('Content-Type: application/json');
+            echo json_encode($usuarios);
+            exit;
+        } else {
+            // Comportamiento normal
+            include_once(BASE_PATH . '/views/templates/header.php');
+            include_once(BASE_PATH . '/views/usuario/lista.php');
+            include_once(BASE_PATH . '/views/templates/footer.php');
+        }
     }
     
     // Mostrar formulario de edición
@@ -103,15 +146,39 @@ class UsuarioController {
             $this->usuario->id = $_GET['id'];
             
             // Obtener los datos del usuario
-            if($this->usuario->leerUno()) {
-                include_once(BASE_PATH . '/views/templates/header.php');
-                include_once(BASE_PATH . '/views/usuario/editar.php');
-                include_once(BASE_PATH . '/views/templates/footer.php');
+            $resultado = $this->usuario->leerUno();
+            
+            // Verificar si es una petición API
+            if(isset($_GET['format']) && $_GET['format'] == 'json') {
+                header('Content-Type: application/json');
+                if($resultado) {
+                    echo json_encode([
+                        'id' => $this->usuario->id,
+                        'nombre' => $this->usuario->nombre,
+                        'email' => $this->usuario->email
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Usuario no encontrado']);
+                }
+                exit;
+            } else {
+                // Comportamiento normal
+                if($resultado) {
+                    include_once(BASE_PATH . '/views/templates/header.php');
+                    include_once(BASE_PATH . '/views/usuario/editar.php');
+                    include_once(BASE_PATH . '/views/templates/footer.php');
+                } else {
+                    header('Location: ' . URL_BASE . 'index.php?action=listar');
+                }
+            }
+        } else {
+            if(isset($_GET['format']) && $_GET['format'] == 'json') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'ID no especificado']);
+                exit;
             } else {
                 header('Location: ' . URL_BASE . 'index.php?action=listar');
             }
-        } else {
-            header('Location: ' . URL_BASE . 'index.php?action=listar');
         }
     }
     
@@ -124,14 +191,28 @@ class UsuarioController {
             $this->usuario->email = $_POST['email'];
             
             // Actualizar el usuario
-            if($this->usuario->actualizar()) {
-                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            $resultado = $this->usuario->actualizar();
+            
+            // Verificar si es una petición API
+            if(isset($_GET['format']) && $_GET['format'] == 'json') {
+                header('Content-Type: application/json');
+                if($resultado) {
+                    echo json_encode(['success' => true, 'message' => 'Usuario actualizado correctamente']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'No se pudo actualizar el usuario']);
+                }
+                exit;
             } else {
-                // Volver al formulario de edición con mensaje de error
-                $error = "No se pudo actualizar el usuario";
-                include_once(BASE_PATH . '/views/templates/header.php');
-                include_once(BASE_PATH . '/views/usuario/editar.php');
-                include_once(BASE_PATH . '/views/templates/footer.php');
+                // Comportamiento normal
+                if($resultado) {
+                    header('Location: ' . URL_BASE . 'index.php?action=listar');
+                } else {
+                    // Volver al formulario de edición con mensaje de error
+                    $error = "No se pudo actualizar el usuario";
+                    include_once(BASE_PATH . '/views/templates/header.php');
+                    include_once(BASE_PATH . '/views/usuario/editar.php');
+                    include_once(BASE_PATH . '/views/templates/footer.php');
+                }
             }
         }
     }
@@ -142,20 +223,40 @@ class UsuarioController {
             $this->usuario->id = $_GET['id'];
             
             // Eliminar el usuario
-            if($this->usuario->eliminar()) {
-                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            $resultado = $this->usuario->eliminar();
+            
+            // Verificar si es una petición API
+            if(isset($_GET['format']) && $_GET['format'] == 'json') {
+                header('Content-Type: application/json');
+                if($resultado) {
+                    echo json_encode(['success' => true, 'message' => 'Usuario eliminado correctamente']);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'No se pudo eliminar el usuario']);
+                }
+                exit;
             } else {
-                // Redirigir a la lista con mensaje de error
-                $error = "No se pudo eliminar el usuario";
-                $result = $this->usuario->leer();
-                $usuarios = $result->fetchAll(PDO::FETCH_ASSOC);
-                
-                include_once(BASE_PATH . '/views/templates/header.php');
-                include_once(BASE_PATH . '/views/usuario/lista.php');
-                include_once(BASE_PATH . '/views/templates/footer.php');
+                // Comportamiento normal
+                if($resultado) {
+                    header('Location: ' . URL_BASE . 'index.php?action=listar');
+                } else {
+                    // Redirigir a la lista con mensaje de error
+                    $error = "No se pudo eliminar el usuario";
+                    $result = $this->usuario->leer();
+                    $usuarios = $result->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    include_once(BASE_PATH . '/views/templates/header.php');
+                    include_once(BASE_PATH . '/views/usuario/lista.php');
+                    include_once(BASE_PATH . '/views/templates/footer.php');
+                }
             }
         } else {
-            header('Location: ' . URL_BASE . 'index.php?action=listar');
+            if(isset($_GET['format']) && $_GET['format'] == 'json') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'ID no especificado']);
+                exit;
+            } else {
+                header('Location: ' . URL_BASE . 'index.php?action=listar');
+            }
         }
     }
     
@@ -163,6 +264,15 @@ class UsuarioController {
     public function logout() {
         session_start();
         session_destroy();
-        header('Location: ' . URL_BASE . 'index.php?action=login');
+        
+        // Verificar si es una petición API
+        if(isset($_GET['format']) && $_GET['format'] == 'json') {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => 'Sesión cerrada correctamente']);
+            exit;
+        } else {
+            // Comportamiento normal
+            header('Location: ' . URL_BASE . 'index.php?action=login');
+        }
     }
 }

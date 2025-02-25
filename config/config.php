@@ -1,7 +1,7 @@
 <?php
 // Definir constantes globales
 define('BASE_PATH', dirname(dirname(__FILE__)));
-define('URL_BASE', 'http://localhost/proyecto/');
+define('URL_BASE', 'http://localhost:8888/crudbasico/');  // Ajusta el puerto según tu configuración de MAMP
 
 // Configuración de errores
 error_reporting(E_ALL);
